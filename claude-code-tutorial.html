@@ -1,0 +1,2580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Code — A Guide for Enterprise Architects</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js" crossorigin="anonymous"></script>
+
+  <style>
+    /* ── CSS Reset ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+
+    /* ── Design Tokens ─────────────────────────────────────── */
+    :root {
+      --bg-base:      #0F1117;
+      --bg-surface:   #161B27;
+      --bg-elevated:  #1E2535;
+      --accent:       #E8A87C;
+      --accent-dim:   #B07A50;
+      --text-primary: #E8EAF0;
+      --text-secondary:#8B95A8;
+      --text-muted:   #4A5568;
+      --border:       #252D3D;
+      --success:      #6EBF8B;
+      --sidebar-w:    260px;
+      --radius:       8px;
+      --radius-sm:    4px;
+    }
+
+    /* ── Animations ────────────────────────────────────────── */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes unlockPulse {
+      0%   { box-shadow: 0 0 0 0 rgba(232,168,124,0); background: transparent; }
+      20%  { box-shadow: 0 0 0 6px rgba(232,168,124,0.25); background: rgba(232,168,124,0.08); }
+      60%  { box-shadow: 0 0 0 12px rgba(232,168,124,0.08); background: rgba(232,168,124,0.04); }
+      100% { box-shadow: 0 0 0 0 rgba(232,168,124,0); background: transparent; }
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes checkmark {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    /* ── Base Typography ───────────────────────────────────── */
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-weight: 400;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      line-height: 1.65;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3 { font-family: 'Lora', Georgia, serif; font-weight: 600; line-height: 1.25; }
+    code, pre, .prompt-block { font-family: 'JetBrains Mono', 'Courier New', monospace; }
+
+    /* ── Welcome Screen ────────────────────────────────────── */
+    #welcome-screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-base);
+      z-index: 100;
+    }
+
+    #welcome-screen.hidden { display: none; }
+
+    .welcome-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 52px 48px;
+      width: min(480px, 90vw);
+      animation: fadeIn 0.4s ease both;
+    }
+
+    .welcome-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+
+    .welcome-card h1 {
+      font-size: 2rem;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+      line-height: 1.2;
+    }
+
+    .welcome-card .subtitle {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      margin-bottom: 36px;
+      line-height: 1.6;
+    }
+
+    .welcome-card label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .welcome-card input[type="text"] {
+      width: 100%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      padding: 12px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 20px;
+    }
+
+    .welcome-card input[type="text"]:focus {
+      border-color: var(--accent-dim);
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--accent);
+      color: #0F1117;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      padding: 13px 20px;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.1s;
+    }
+
+    .btn-primary:hover { background: #d4976a; }
+    .btn-primary:active { transform: scale(0.99); }
+    .btn-primary:disabled { background: var(--text-muted); cursor: not-allowed; }
+
+    /* ── App Shell ─────────────────────────────────────────── */
+    #app {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    #app.hidden { display: none; }
+
+    /* ── Sidebar ───────────────────────────────────────────── */
+    #sidebar {
+      width: var(--sidebar-w);
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      overflow-y: auto;
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .wordmark {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .sidebar-title {
+      font-family: 'Lora', serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+
+    .learner-greeting {
+      padding: 16px 24px;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .learner-greeting strong {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    /* ── Sidebar Nav ───────────────────────────────────────── */
+    #sidebar-nav {
+      flex: 1;
+      padding: 16px 0;
+    }
+
+    #sidebar-nav ol {
+      list-style: none;
+    }
+
+    .nav-item {
+      position: relative;
+      margin: 2px 12px;
+    }
+
+    .nav-item-btn {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s;
+      color: inherit;
+    }
+
+    .nav-item-btn:hover:not(:disabled) {
+      background: var(--bg-elevated);
+    }
+
+    .nav-item-btn:disabled {
+      cursor: not-allowed;
+    }
+
+    .nav-status {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      margin-top: 1px;
+    }
+
+    /* Locked state */
+    .nav-item.locked .nav-status {
+      color: var(--text-muted);
+      border: 1.5px solid var(--border);
+      font-size: 0.65rem;
+    }
+
+    .nav-item.locked .nav-label { color: var(--text-muted); }
+    .nav-item.locked .nav-num   { color: var(--text-muted); }
+
+    /* Active state */
+    .nav-item.active .nav-status {
+      background: var(--accent);
+      color: #0F1117;
+      font-size: 0.55rem;
+    }
+
+    .nav-item.active .nav-label { color: var(--text-primary); font-weight: 500; }
+
+    /* Completed state */
+    .nav-item.completed .nav-status {
+      background: var(--success);
+      color: #0F1117;
+      font-size: 0.7rem;
+    }
+
+    .nav-item.completed .nav-label { color: var(--text-secondary); }
+
+    /* Unlock animation applied via JS */
+    .nav-item.unlock-anim .nav-item-btn {
+      animation: unlockPulse 0.8s ease-out both;
+      border-radius: var(--radius-sm);
+    }
+
+    .nav-label {
+      flex: 1;
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+
+    .nav-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .nav-title {
+      display: block;
+    }
+
+    /* ── Sidebar Footer ────────────────────────────────────── */
+    .sidebar-footer {
+      padding: 16px 24px 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .progress-bar-wrap {
+      margin-bottom: 14px;
+    }
+
+    .progress-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.73rem;
+      color: var(--text-secondary);
+      margin-bottom: 7px;
+    }
+
+    .progress-bar-track {
+      height: 3px;
+      background: var(--bg-elevated);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    .reset-link {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.73rem;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+      text-decoration-color: transparent;
+      transition: color 0.2s, text-decoration-color 0.2s;
+    }
+
+    .reset-link:hover {
+      color: var(--text-secondary);
+      text-decoration-color: var(--text-secondary);
+    }
+
+    /* ── Main Content Area ─────────────────────────────────── */
+    #content-area {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 60px 72px 80px;
+      max-width: calc(var(--sidebar-w) + 760px);
+      animation: fadeIn 0.25s ease both;
+    }
+
+    /* ── Section Article ───────────────────────────────────── */
+    .section-article {
+      animation: fadeIn 0.25s ease both;
+    }
+
+    .section-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .section-article h2 {
+      font-size: 2rem;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .section-meta {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      margin-bottom: 40px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Prose rendered from markdown */
+    .section-body { margin-bottom: 36px; }
+
+    .section-body p {
+      margin-bottom: 1em;
+      font-size: 0.975rem;
+      color: var(--text-primary);
+    }
+
+    .section-body h3 {
+      font-size: 1.1rem;
+      color: var(--text-primary);
+      margin: 1.6em 0 0.5em;
+    }
+
+    .section-body ul, .section-body ol {
+      padding-left: 1.4em;
+      margin-bottom: 1em;
+    }
+
+    .section-body li {
+      font-size: 0.975rem;
+      margin-bottom: 0.35em;
+    }
+
+    .section-body strong { font-weight: 500; color: var(--text-primary); }
+    .section-body em { font-style: italic; color: var(--text-secondary); }
+
+    .section-body code {
+      background: var(--bg-elevated);
+      color: var(--accent);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 0.88em;
+    }
+
+    /* ── Callout Box ───────────────────────────────────────── */
+    .callout {
+      border-left: 3px solid var(--accent);
+      background: var(--bg-surface);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: 16px 20px;
+      margin: 28px 0;
+    }
+
+    .callout-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent-dim);
+      margin-bottom: 6px;
+    }
+
+    .callout p {
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .callout p strong { color: var(--text-primary); font-weight: 500; }
+
+    /* ── Prompt Example Block ──────────────────────────────── */
+    .prompt-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 28px 0;
+    }
+
+    @media (max-width: 680px) {
+      .prompt-compare { grid-template-columns: 1fr; }
+    }
+
+    .prompt-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .prompt-card-header {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .prompt-card.weak .prompt-card-header { color: #e07070; }
+    .prompt-card.strong .prompt-card-header { color: var(--success); }
+
+    .prompt-block {
+      padding: 16px;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: var(--text-secondary);
+    }
+
+    .prompt-card.strong .prompt-block { color: var(--text-primary); }
+
+    /* Single prompt block */
+    .prompt-single {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin: 24px 0;
+    }
+
+    .prompt-single-header {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent-dim);
+    }
+
+    .prompt-single .prompt-block {
+      color: var(--text-primary);
+    }
+
+    /* ASCII diagram */
+    .diagram-block {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      overflow-x: auto;
+      white-space: pre;
+      margin: 28px 0;
+    }
+
+    /* ── Quiz Zone ─────────────────────────────────────────── */
+    .quiz-zone {
+      margin-top: 44px;
+      padding-top: 36px;
+      border-top: 1px solid var(--border);
+    }
+
+    .quiz-header {
+      margin-bottom: 28px;
+    }
+
+    .quiz-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .quiz-header h3 {
+      font-size: 1.05rem;
+      font-family: 'Lora', serif;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.35;
+    }
+
+    .quiz-question {
+      margin-bottom: 28px;
+    }
+
+    .quiz-question-text {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    .quiz-question-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--accent-dim);
+      margin-right: 8px;
+    }
+
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .quiz-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 11px 14px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      text-align: left;
+      width: 100%;
+      color: var(--text-secondary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .quiz-option:hover:not(:disabled) {
+      border-color: var(--accent-dim);
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+    }
+
+    .quiz-option.selected {
+      border-color: var(--accent-dim);
+      background: rgba(232,168,124,0.06);
+      color: var(--text-primary);
+    }
+
+    /* Post-submit states */
+    .quiz-option.correct {
+      border-color: var(--success);
+      background: rgba(110,191,139,0.08);
+      color: var(--text-primary);
+    }
+
+    .quiz-option.incorrect {
+      border-color: #e07070;
+      background: rgba(224,112,112,0.07);
+      color: var(--text-secondary);
+    }
+
+    .quiz-option.correct-answer-reveal {
+      border-color: var(--success);
+      background: rgba(110,191,139,0.06);
+      color: var(--text-secondary);
+    }
+
+    .quiz-option:disabled {
+      cursor: default;
+    }
+
+    .quiz-option-indicator {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      margin-top: 1px;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+    }
+
+    .quiz-option.selected .quiz-option-indicator {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #0F1117;
+    }
+
+    .quiz-option.correct .quiz-option-indicator {
+      border-color: var(--success);
+      background: var(--success);
+      color: #0F1117;
+    }
+
+    .quiz-option.incorrect .quiz-option-indicator {
+      border-color: #e07070;
+      background: rgba(224,112,112,0.2);
+      color: #e07070;
+    }
+
+    .quiz-option.correct-answer-reveal .quiz-option-indicator {
+      border-color: var(--success);
+      background: transparent;
+      color: var(--success);
+    }
+
+    .quiz-explanation {
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-sm);
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      animation: slideDown 0.25s ease both;
+    }
+
+    .quiz-explanation strong { color: var(--text-primary); font-weight: 500; }
+
+    .quiz-actions {
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .btn-quiz-submit {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      padding: 10px 22px;
+      cursor: pointer;
+      transition: background 0.18s, border-color 0.18s;
+    }
+
+    .btn-quiz-submit:hover:not(:disabled) {
+      background: var(--bg-surface);
+      border-color: var(--accent-dim);
+    }
+
+    .btn-quiz-submit:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .quiz-score {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      animation: fadeIn 0.25s ease both;
+    }
+
+    .quiz-score .score-correct { color: var(--success); font-weight: 500; }
+    .quiz-score .score-wrong   { color: #e07070; font-weight: 500; }
+
+    .btn-continue {
+      background: var(--accent);
+      color: #0F1117;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      padding: 10px 22px;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.1s;
+      animation: fadeIn 0.3s ease both;
+    }
+
+    .btn-continue:hover { background: #d4976a; }
+    .btn-continue:active { transform: scale(0.98); }
+
+    .submit-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* Completed quiz summary (read-only, section already done) */
+    .quiz-completed-summary {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+      padding: 10px 0 4px;
+    }
+
+    .quiz-score-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 3px 10px;
+      color: var(--text-primary);
+    }
+
+    /* ── Completion View ───────────────────────────────────── */
+    .completion-view {
+      animation: fadeIn 0.3s ease both;
+    }
+
+    .completion-hero {
+      text-align: center;
+      padding: 40px 0 56px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 48px;
+    }
+
+    .completion-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(110,191,139,0.12);
+      border: 2px solid var(--success);
+      font-size: 1.6rem;
+      margin-bottom: 24px;
+      color: var(--success);
+    }
+
+    .completion-hero h2 {
+      font-size: 2.1rem;
+      margin-bottom: 12px;
+    }
+
+    .completion-hero p {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    /* ── Resource Cards (Section 11) ───────────────────────── */
+    .resource-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 24px 0 36px;
+    }
+
+    @media (max-width: 680px) {
+      .resource-grid { grid-template-columns: 1fr; }
+    }
+
+    .resource-card {
+      display: flex;
+      gap: 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      text-decoration: none;
+      transition: border-color 0.18s, background 0.18s;
+      align-items: flex-start;
+    }
+
+    .resource-card:hover {
+      border-color: var(--accent-dim);
+      background: var(--bg-elevated);
+    }
+
+    .resource-card-icon {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: rgba(232,168,124,0.1);
+      border: 1px solid rgba(232,168,124,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      color: var(--accent);
+      margin-top: 1px;
+    }
+
+    .resource-card-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .resource-card-title {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 5px;
+      line-height: 1.3;
+    }
+
+    .resource-card-desc {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      margin-bottom: 8px;
+    }
+
+    .resource-card-url {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--accent-dim);
+    }
+
+    /* ── Storage Warning Banner ────────────────────────────── */
+    #storage-banner {
+      display: none;
+      background: rgba(232,168,124,0.08);
+      border-bottom: 1px solid rgba(232,168,124,0.2);
+      padding: 10px 24px;
+      font-size: 0.8rem;
+      color: var(--accent-dim);
+      text-align: center;
+    }
+
+    #storage-banner.visible { display: block; }
+
+    /* ── Responsive ────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      :root { --sidebar-w: 0px; }
+
+      #sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      #app {
+        flex-direction: column;
+      }
+
+      #content-area {
+        margin-left: 0;
+        padding: 32px 24px 60px;
+        max-width: 100%;
+      }
+
+      .section-article h2 { font-size: 1.5rem; }
+    }
+
+    /* ── Focus Styles (Accessibility) ──────────────────────── */
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
+    }
+
+    button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); }
+  </style>
+</head>
+<body>
+
+  <!-- Storage warning banner (shown if localStorage unavailable) -->
+  <div id="storage-banner" role="alert" aria-live="polite">
+    Progress won't be saved in private browsing mode. Complete the tutorial in one session.
+  </div>
+
+  <!-- ── Welcome Screen ──────────────────────────────────── -->
+  <div id="welcome-screen" role="main" aria-label="Welcome screen">
+    <div class="welcome-card">
+      <div class="welcome-eyebrow">Claude Code · Enterprise Track</div>
+      <h1>A Practical Guide for Architects</h1>
+      <p class="subtitle">Eleven sections, from fundamentals to next steps. Progress is saved locally — pick up where you left off.</p>
+      <form id="welcome-form" novalidate>
+        <label for="learner-name">Your name</label>
+        <input
+          type="text"
+          id="learner-name"
+          name="learner-name"
+          placeholder="e.g. Alex Kim"
+          autocomplete="given-name"
+          maxlength="60"
+          required
+          aria-required="true"
+        >
+        <button type="submit" class="btn-primary" id="begin-btn" disabled>Begin →</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── App Shell ───────────────────────────────────────── -->
+  <div id="app" class="hidden" aria-label="Tutorial application">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" aria-label="Tutorial navigation">
+      <div class="sidebar-header">
+        <div class="wordmark">Claude Code</div>
+        <div class="sidebar-title">Enterprise Architects Guide</div>
+      </div>
+      <div class="learner-greeting" id="learner-greeting" aria-live="polite"></div>
+      <nav id="sidebar-nav" aria-label="Sections">
+        <ol id="nav-list" role="list"></ol>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-label">
+            <span>Progress</span>
+            <span id="progress-count">0 / 5</span>
+          </div>
+          <div class="progress-bar-track" role="progressbar" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0" id="progress-bar-track">
+            <div class="progress-bar-fill" id="progress-bar-fill" style="width:0%"></div>
+          </div>
+        </div>
+        <button class="reset-link" id="reset-btn" aria-label="Reset all progress and start over">Reset progress</button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main id="content-area" aria-live="polite" aria-label="Section content"></main>
+  </div>
+
+  <script>
+  // ════════════════════════════════════════════════════════════
+  //  CONTENT DATA
+  // ════════════════════════════════════════════════════════════
+
+  // ════════════════════════════════════════════════════════════
+  //  QUIZ DATA
+  // ════════════════════════════════════════════════════════════
+
+  const QUIZ_DATA = [
+    // Section 1 — What is Claude Code?
+    [
+      {
+        question: "What fundamentally distinguishes Claude Code from Claude.ai in the browser?",
+        options: [
+          "Claude Code uses a more powerful AI model",
+          "Claude Code executes tasks inside your environment — reading files, running commands, and editing code",
+          "Claude Code only works with programming languages, not natural language",
+          "Claude Code requires an internet connection to function"
+        ],
+        correct: 1,
+        explanation: "Claude Code is an agentic tool that operates directly in your development environment. Claude.ai is a conversational interface with no access to your local system. The capability difference is architectural, not just in model version."
+      },
+      {
+        question: "Which of the following is a genuine limitation of Claude Code you should design around?",
+        options: [
+          "It cannot process files longer than 1,000 lines",
+          "It cannot understand system architecture diagrams",
+          "It has no persistent memory between sessions by default — everything lives in the context window",
+          "It cannot execute terminal commands on Windows systems"
+        ],
+        correct: 2,
+        explanation: "Claude Code's working memory is bounded by the context window. Between sessions, nothing persists unless you've configured CLAUDE.md or another mechanism. Designing for this constraint — not against it — is the right architectural posture."
+      },
+      {
+        question: "For an Enterprise Architect, which task plays most directly to Claude Code's strengths?",
+        options: [
+          "Continuously monitoring a production system for anomalies",
+          "Making autonomous go/no-go decisions on architecture changes",
+          "Ingesting a repository and generating a structured Architecture Decision Record",
+          "Managing infrastructure billing across cloud accounts"
+        ],
+        correct: 2,
+        explanation: "Claude Code excels at bounded, well-scoped tasks: read this, synthesize that, produce a structured output. Continuous monitoring and autonomous high-stakes decisions are outside its design intent — those require persistent processes and human authority respectively."
+      }
+    ],
+
+    // Section 2 — Writing Effective Prompts
+    [
+      {
+        question: "Which three dimensions form the most effective framework for crafting architectural prompts?",
+        options: [
+          "Who, What, When",
+          "Scope, Format, Constraints",
+          "Input, Process, Output",
+          "Objective, Key Results, Timeline"
+        ],
+        correct: 1,
+        explanation: "Scope (what's the target), Format (what should the output look like), and Constraints (what guardrails apply) are the three dimensions that make a prompt actionable. They force you to define 'done' before you start, which is the single biggest factor in output quality."
+      },
+      {
+        question: "What is the primary quality that separates a strong prompt from a weak one?",
+        options: [
+          "Length — longer prompts produce better results",
+          "Formality — professional phrasing improves accuracy",
+          "Specificity — a short, precise prompt outperforms a long, vague one",
+          "Complexity — more detailed requirements yield richer output"
+        ],
+        correct: 2,
+        explanation: "Specificity is the decisive variable. A prompt that clearly defines the target, expected output format, and constraints will outperform a lengthy, meandering one every time. If you can't describe what 'done' looks like, Claude Code can't know either."
+      },
+      {
+        question: "When generating documentation from a codebase, which prompt approach is most effective?",
+        options: [
+          "Ask Claude Code to 'write good documentation for this project'",
+          "Tell Claude Code to document everything it finds in the repository",
+          "Specify the source files, output format, intended audience, and what to explicitly omit",
+          "Let Claude Code determine the best format based on what it finds"
+        ],
+        correct: 2,
+        explanation: "Documentation prompts must specify all four dimensions: what to read, what format to produce (C4, OpenAPI, ADR, etc.), who it's for, and what to exclude. Open-ended documentation requests produce comprehensive but unfocused output — not what architects typically need."
+      }
+    ],
+
+    // Section 3 — Understanding Context Windows
+    [
+      {
+        question: "What is the context window in Claude Code?",
+        options: [
+          "A UI panel showing the history of recent commands",
+          "The finite block of text the model processes as a single unit — instructions, files, conversation, and tool output",
+          "A cache of previously accessed files that persists across sessions",
+          "The maximum number of files Claude Code can open simultaneously"
+        ],
+        correct: 1,
+        explanation: "The context window is everything Claude Code can 'see' at once. When it fills, older content is dropped. It doesn't persist between sessions and can't be expanded by asking nicely — it's a hard architectural constraint you plan around."
+      },
+      {
+        question: "What is the best use for a CLAUDE.md file?",
+        options: [
+          "Storing large reference files for Claude Code to load on demand",
+          "Logging Claude Code's outputs for audit purposes",
+          "Encoding stable project conventions, constraints, and terminology that should always be in scope",
+          "Specifying which files Claude Code is not allowed to read"
+        ],
+        correct: 2,
+        explanation: "CLAUDE.md is re-read at session start, making it the right place for durable context: coding conventions, architecture decisions, terminology, and standing constraints. It's your persistent instruction layer — everything else lives in the chat and eventually drops off."
+      },
+      {
+        question: "What does 'context drift' mean in a Claude Code session?",
+        options: [
+          "The model begins producing responses in a different language or style",
+          "The file system changes while Claude Code is mid-task",
+          "Early instructions lose influence as the context window fills with later content",
+          "Claude Code's response latency increases over a long session"
+        ],
+        correct: 2,
+        explanation: "As conversation grows, earlier instructions are effectively crowded out. A constraint you set in turn 1 may have little influence by turn 20. The mitigations are: restate critical constraints periodically, encode them in CLAUDE.md, or start a fresh session when the domain shifts significantly."
+      }
+    ],
+
+    // Section 4 — Agentic Workflows
+    [
+      {
+        question: "Which combination of characteristics makes a task well-suited for agentic mode?",
+        options: [
+          "Requires creative judgment and strategic input at every step",
+          "Multi-step, bounded scope, low decision ambiguity, high execution volume",
+          "Involves stakeholder consensus and real-time collaboration",
+          "Has no clear definition of done and benefits from open exploration"
+        ],
+        correct: 1,
+        explanation: "Agentic mode earns its value when steps are mechanical and chained — each output informs the next, 'done' is clearly defined, and intermediate decisions are algorithmic rather than strategic. Give it clear objectives and a bounded scope; keep judgment calls with humans."
+      },
+      {
+        question: "What is the primary architectural purpose of human-in-the-loop checkpoints in agentic workflows?",
+        options: [
+          "To slow Claude Code down so errors can be spotted before they propagate",
+          "To compensate for Claude Code's inability to invoke external tools",
+          "To retain human oversight at points of irreversibility or strategic decision",
+          "To reduce API costs by batching Claude Code's requests"
+        ],
+        correct: 2,
+        explanation: "Checkpoints aren't a workaround for distrust — they're deliberate architecture. Destructive actions (file deletes, database writes), external side effects (ticket creation, API calls), and strategic choices belong at human gates. Everything between those gates can flow autonomously."
+      },
+      {
+        question: "Which scenario is LEAST appropriate for agentic delegation to Claude Code?",
+        options: [
+          "Auditing 80 files for a specific anti-pattern and logging each occurrence",
+          "Running a test suite, diagnosing failures, and implementing fixes",
+          "Deciding whether to decompose a monolith into microservices",
+          "Generating GitHub issues from a structured list of security findings"
+        ],
+        correct: 2,
+        explanation: "Architecture migration decisions involve strategic trade-offs, organizational context, team capability, risk appetite, and long-term maintenance implications — none of which Claude Code can fully evaluate. Execution is delegatable. Strategy is not."
+      }
+    ],
+
+    // Section 5 — MCP Basics
+    [
+      {
+        question: "Which analogy best describes MCP's role in enterprise AI architecture?",
+        options: [
+          "MCP is to AI agents what Docker is to applications",
+          "MCP is to AI agents what REST APIs are to microservices",
+          "MCP is to AI agents what OAuth is to security",
+          "MCP is to AI agents what Kubernetes is to containers"
+        ],
+        correct: 1,
+        explanation: "Like REST APIs, MCP defines a typed, discoverable contract between a caller (Claude Code) and a capability provider (the MCP server). The caller doesn't need implementation details — just the interface. The analogy holds for composition, versioning, and separation of concerns."
+      },
+      {
+        question: "In an MCP integration, which layer is responsible for authentication, rate limiting, and data transformation?",
+        options: [
+          "Claude Code manages credentials and handles rate limits directly",
+          "The user provides credentials inline with each prompt",
+          "The MCP server owns auth, rate limiting, and data normalization",
+          "Anthropic's API layer manages all external authentication"
+        ],
+        correct: 2,
+        explanation: "The MCP server is the integration layer — it holds credentials, enforces rate limits, and normalizes data formats before Claude Code ever sees them. Claude Code only sees clean tool interfaces. This is the same separation of concerns you'd apply to any well-designed API."
+      },
+      {
+        question: "What does a narrow, well-scoped MCP tool surface signal about an AI system design?",
+        options: [
+          "The AI system has limited capabilities and will need frequent expansion",
+          "The integration is incomplete and represents technical debt",
+          "The system is well-architected with clear, intentional capability boundaries",
+          "The MCP server is using an outdated version of the protocol"
+        ],
+        correct: 2,
+        explanation: "Minimal tool surface is a quality signal, not a limitation. Well-designed AI integrations expose exactly what the agent needs — no more. A sprawling tool list suggests unclear scope and creates unnecessary attack surface. Apply the same principle of minimal privilege you'd use for any API or service account."
+      }
+    ],
+
+    // Section 6 — Plan Mode & Execution Modes
+    [
+      {
+        question: "What is the primary purpose of Plan Mode in Claude Code?",
+        options: [
+          "To restrict which tools Claude can use during a session",
+          "Claude thinks through and presents a step-by-step approach for your approval before executing anything",
+          "To enable Claude Code to work offline without an internet connection",
+          "To generate documentation instead of modifying code"
+        ],
+        correct: 1,
+        explanation: "Plan mode separates strategy from execution. Claude produces a reviewable checklist of intended steps — you can approve, redirect, or reject it before any file is touched or command is run. It's the 'measure twice, cut once' mode."
+      },
+      {
+        question: "When does Plan Mode add the most value?",
+        options: [
+          "For simple, well-scoped single-line edits",
+          "When you want Claude Code to run faster",
+          "Before complex refactors, unfamiliar codebases, or operations touching many files across a system",
+          "When you want to disable all tool usage entirely"
+        ],
+        correct: 2,
+        explanation: "Plan mode pays dividends when the cost of a wrong approach is high — large-scope changes, systems you don't know well, or operations that are hard to reverse. For a two-line fix in a file you own, the overhead isn't worth it."
+      },
+      {
+        question: "In default (non-plan) mode, how does Claude Code handle potentially sensitive operations like deleting files or writing to external systems?",
+        options: [
+          "It refuses all destructive operations regardless of mode",
+          "It executes them silently without notification",
+          "It pauses and prompts for user approval before proceeding",
+          "It creates a backup automatically before each operation"
+        ],
+        correct: 2,
+        explanation: "In default mode, Claude Code runs automatically for safe operations (reading files, running tests) but surfaces a confirmation prompt before executing actions that are hard to reverse or that affect shared systems. This is the core human-in-the-loop safety mechanism."
+      }
+    ],
+
+    // Section 7 — Tools
+    [
+      {
+        question: "Which tool should you prefer when modifying an existing file?",
+        options: [
+          "Write — replace the entire file with updated content",
+          "Bash with sed or awk to make targeted edits",
+          "Edit — make precise, targeted string replacements",
+          "Read the file, modify the content in memory, then Write it back"
+        ],
+        correct: 2,
+        explanation: "Edit sends only the changed diff, making tool calls reviewable at a glance and keeping context consumption low. Write is reserved for creating new files or full rewrites. Using Write for small edits is like replacing an entire document because you corrected one sentence."
+      },
+      {
+        question: "What does the tool permission model in Claude Code control?",
+        options: [
+          "Which team members are allowed to use Claude Code",
+          "Which AI models are available for selection",
+          "Whether each tool call runs automatically or requires explicit user approval",
+          "How much of the context window each tool is allowed to consume"
+        ],
+        correct: 2,
+        explanation: "Tools are categorized as auto-allowed or requiring approval. In a production or shared environment you might restrict Bash and Write; on an isolated dev box you might auto-allow everything. The permission model is where policy lives — configure it deliberately, not by default."
+      },
+      {
+        question: "You need to find all TypeScript files matching a naming pattern across a large monorepo. Which tool is best suited for this?",
+        options: [
+          "Bash with the find command",
+          "Read, traversing directories manually",
+          "Grep with a regex pattern",
+          "Glob with a pattern like **/*.service.ts"
+        ],
+        correct: 3,
+        explanation: "Glob is purpose-built for file pattern matching — fast, returns results sorted by modification time, and doesn't require shell permissions. Use Grep when you're searching file *contents*; use Glob when you're matching by *file path or name pattern*."
+      }
+    ],
+
+    // Section 8 — Subagents
+    [
+      {
+        question: "What is the primary advantage of running a subagent in an isolated git worktree?",
+        options: [
+          "The subagent can use a different AI model than the parent agent",
+          "The subagent works on a separate copy of the repo so changes don't affect your current working state",
+          "Worktrees give the subagent access to a larger context window",
+          "Worktrees skip file permission checks, making the agent faster"
+        ],
+        correct: 1,
+        explanation: "Worktree isolation means the subagent can freely read, write, and modify files — even run tests and commit — without any risk to your working state. Good changes get merged; bad ones vanish when the worktree is cleaned up. It's a disposable sandbox per task."
+      },
+      {
+        question: "When should you use a subagent rather than handling a task in the main conversation?",
+        options: [
+          "Whenever a task requires the Bash tool",
+          "When a task would flood the main context with noise, or when multiple tasks can run in parallel",
+          "Only when the task requires browsing the web",
+          "When you want the task to run faster than the main agent can"
+        ],
+        correct: 1,
+        explanation: "Subagents serve two purposes: context protection (large search results, exploratory work) and parallelism. Spawning three agents to simultaneously analyze three different services is faster and cleaner than doing it sequentially in one conversation that accumulates noise."
+      },
+      {
+        question: "Which specialized subagent type is purpose-built for quickly navigating and searching a codebase?",
+        options: [
+          "general-purpose",
+          "Plan (architect agent)",
+          "Explore",
+          "feature-dev:code-reviewer"
+        ],
+        correct: 2,
+        explanation: "The Explore agent is optimized for fast codebase navigation: glob patterns, content search, reading files, answering structural questions. When you need to understand layout or find something quickly without the overhead of a full general-purpose agent, Explore is the right choice."
+      }
+    ],
+
+    // Section 9 — Choosing the Right Model
+    [
+      {
+        question: "Which model is the best default choice for everyday development tasks — code review, refactoring, documentation, and standard prompts?",
+        options: [
+          "Claude Opus — always use the most capable model available",
+          "Claude Haiku — response speed matters most for interactive work",
+          "Claude Sonnet — best balance of capability, speed, and cost",
+          "Rotate models regularly to get diverse perspectives"
+        ],
+        correct: 2,
+        explanation: "Sonnet is the workhorse: capable enough for the vast majority of engineering tasks, fast enough for interactive use, and cost-efficient enough for high-volume work. Reserve Opus for genuinely hard problems; use Haiku for simple, repetitive tasks. Using Opus for everything is like renting a cargo ship to deliver a letter."
+      },
+      {
+        question: "Which scenario most clearly justifies reaching for Claude Opus over Sonnet?",
+        options: [
+          "All tasks — always maximize model capability",
+          "When the task requires generating images or audio",
+          "Analyzing novel architecture trade-offs, complex security scenarios, or multi-layered reasoning where quality outweighs cost",
+          "When you need faster response times for a real-time application"
+        ],
+        correct: 2,
+        explanation: "Opus earns its cost on problems requiring simultaneous reasoning across many constraints, nuanced judgment under ambiguity, or synthesis across complex domains. Most development tasks don't need that ceiling — correctly identifying which tasks do is the skill."
+      },
+      {
+        question: "Which factor is LEAST relevant when choosing a Claude model for a task?",
+        options: [
+          "The complexity and required reasoning depth of the task",
+          "Cost sensitivity, especially for high-volume or CI/CD pipeline use",
+          "Whether the model was trained on your specific programming language",
+          "Acceptable latency — interactive work vs. batch processing"
+        ],
+        correct: 2,
+        explanation: "All Claude models are trained on broad corpora covering every major language and framework — language isn't a meaningful differentiator between model sizes. The real decision axes are capability (how complex is the reasoning?), cost (how often will this run?), and speed (how fast does the response need to arrive?)."
+      }
+    ],
+
+    // Section 10 — Plugins, Hooks & IDE Integration
+    [
+      {
+        question: "What is the primary function of the Hooks system in Claude Code?",
+        options: [
+          "To automatically install new MCP servers when Claude Code starts",
+          "To synchronize Claude Code settings and commands across a team",
+          "Shell scripts that execute in response to Claude Code lifecycle events, enabling governance and automation",
+          "To extend the context window by caching outputs from previous sessions"
+        ],
+        correct: 2,
+        explanation: "Hooks run your own shell commands at defined lifecycle points (PreToolUse, PostToolUse, etc.). This is the governance layer: enforce policies, block tool calls, run automated checks, log activity, or trigger side effects — all without relying on prompt instructions that can be overridden."
+      },
+      {
+        question: "What are custom slash commands in Claude Code, and how are they created?",
+        options: [
+          "Keyboard shortcuts configured in ~/.claude/keybindings.json",
+          "Markdown files saved in .claude/commands/ — each file becomes a /command available in any session",
+          "Python scripts registered through Claude Code's plugin registry",
+          "Commands installed by adding new MCP servers"
+        ],
+        correct: 1,
+        explanation: "Any Markdown file in `.claude/commands/` becomes a `/command`. This is how teams standardize repeatable workflows — `/architecture-review`, `/generate-release-notes`, `/security-audit` — so everyone uses the same prompting pattern without having to reconstruct it from memory each time."
+      },
+      {
+        question: "What key advantage do IDE integrations (VS Code, JetBrains) offer over using Claude Code purely from the terminal?",
+        options: [
+          "IDE integrations unlock larger context windows than the terminal allows",
+          "IDE integrations bypass the terminal layer, making Claude Code meaningfully faster",
+          "Developers interact with Claude Code inline in their editor — reviewing diffs, accepting changes line-by-line, and running commands without context-switching",
+          "IDE integrations are the only way to use custom slash commands"
+        ],
+        correct: 2,
+        explanation: "The terminal works fine, but editor integrations remove friction: proposed changes appear as reviewable diffs, you accept them per-line or per-file, and Claude Code commands are available from the command palette. For team adoption, meeting developers in the environment where their code lives is the difference between a tool people use and one they don't."
+      }
+    ],
+
+    // Section 11 — What's Next
+    [
+      {
+        question: "What is the single most authoritative source for current Claude Code capabilities, settings references, and command-line options?",
+        options: [
+          "Stack Overflow answers and community forums",
+          "The official Anthropic documentation at docs.anthropic.com",
+          "This tutorial",
+          "The --help output from the Claude Code CLI"
+        ],
+        correct: 1,
+        explanation: "docs.anthropic.com is the maintained, authoritative reference. It reflects current capabilities, recently released features, configuration options, and deprecations that secondary sources — including tutorials like this one — won't always be current on. When in doubt, go to the source."
+      },
+      {
+        question: "Which resource is the authoritative specification for understanding the MCP protocol and building your own MCP servers?",
+        options: [
+          "The CLAUDE.md file in your project repository",
+          "The Claude Code release notes and changelog",
+          "The Model Context Protocol specification at modelcontextprotocol.io",
+          "Anthropic's main API reference"
+        ],
+        correct: 2,
+        explanation: "The MCP spec lives at modelcontextprotocol.io — covering protocol design, tool schemas, server implementations, transport options (stdio/HTTP), and the growing ecosystem of community-built servers. If you're designing or evaluating MCP integrations, this is the primary reference."
+      },
+      {
+        question: "You've completed this training. What is the most effective next step for building real competency?",
+        options: [
+          "Read more documentation and tutorials before attempting anything in a real project",
+          "Wait until your team formally adopts Claude Code before using it yourself",
+          "Pick one genuine task from your current work and complete it end-to-end with Claude Code",
+          "Focus on mastering advanced features before using basic ones"
+        ],
+        correct: 2,
+        explanation: "There is no substitute for a real task with real stakes. Documentation builds vocabulary; actual use builds judgment. Every concept in this training becomes clearer the first time it applies to work you care about. The most effective next step is always concrete: pick something you'd have done manually and do it with Claude Code instead."
+      }
+    ]
+  ];
+
+  const SECTIONS = [
+    {
+      id: 1,
+      title: "What is Claude Code?",
+      meta: "Core concept · ~5 min read",
+      render: renderSection1
+    },
+    {
+      id: 2,
+      title: "Writing Effective Prompts",
+      meta: "Craft · ~6 min read",
+      render: renderSection2
+    },
+    {
+      id: 3,
+      title: "Understanding Context Windows",
+      meta: "Mental model · ~5 min read",
+      render: renderSection3
+    },
+    {
+      id: 4,
+      title: "Agentic Workflows",
+      meta: "Capability · ~6 min read",
+      render: renderSection4
+    },
+    {
+      id: 5,
+      title: "MCP Basics",
+      meta: "Architecture · ~6 min read",
+      render: renderSection5
+    },
+    {
+      id: 6,
+      title: "Plan Mode & Execution Modes",
+      meta: "Workflow · ~5 min read",
+      render: renderSection6
+    },
+    {
+      id: 7,
+      title: "Tools — Built-in Capabilities",
+      meta: "Reference · ~6 min read",
+      render: renderSection7
+    },
+    {
+      id: 8,
+      title: "Subagents",
+      meta: "Advanced · ~5 min read",
+      render: renderSection8
+    },
+    {
+      id: 9,
+      title: "Choosing the Right Model",
+      meta: "Strategy · ~4 min read",
+      render: renderSection9
+    },
+    {
+      id: 10,
+      title: "Plugins, Hooks & IDE Integration",
+      meta: "Ecosystem · ~5 min read",
+      render: renderSection10
+    },
+    {
+      id: 11,
+      title: "What's Next",
+      meta: "Closing · ~3 min read",
+      render: renderSection11
+    }
+  ];
+
+  // ════════════════════════════════════════════════════════════
+  //  STATE MANAGEMENT
+  // ════════════════════════════════════════════════════════════
+
+  const STORAGE_KEY = "cc_tutorial_state";
+  let storageAvailable = true;
+
+  function state_defaultState() {
+    return {
+      learnerName: null,
+      currentSection: 0,
+      sections: SECTIONS.map(s => ({
+        id: s.id,
+        completed: false,
+        quizAnswers: [null, null, null],
+        quizSubmitted: false,
+        quizScore: null
+      }))
+    };
+  }
+
+  let STATE = state_defaultState();
+
+  function state_load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // Merge to handle schema additions gracefully
+        STATE = { ...state_defaultState(), ...parsed };
+        STATE.sections = STATE.sections.map((s, i) => ({
+          ...state_defaultState().sections[i],
+          ...s
+        }));
+      }
+    } catch (e) {
+      storageAvailable = false;
+    }
+  }
+
+  function state_save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
+    } catch (e) {
+      storageAvailable = false;
+      document.getElementById("storage-banner").classList.add("visible");
+    }
+  }
+
+  function state_reset() {
+    STATE = state_defaultState();
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  }
+
+  function state_getActiveSection() {
+    // Returns index of first incomplete section
+    const idx = STATE.sections.findIndex(s => !s.completed);
+    return idx === -1 ? SECTIONS.length - 1 : idx;
+  }
+
+  function state_completedCount() {
+    return STATE.sections.filter(s => s.completed).length;
+  }
+
+  function state_allComplete() {
+    return STATE.sections.every(s => s.completed);
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  RENDER — SIDEBAR
+  // ════════════════════════════════════════════════════════════
+
+  function render_sidebar() {
+    // Greeting
+    const greeting = document.getElementById("learner-greeting");
+    const activeIdx = state_getActiveSection();
+    const completed = state_completedCount();
+
+    if (completed === 0) {
+      greeting.innerHTML = `Welcome, <strong>${escHtml(STATE.learnerName)}</strong>.`;
+    } else if (state_allComplete()) {
+      greeting.innerHTML = `All done, <strong>${escHtml(STATE.learnerName)}</strong>. Well played.`;
+    } else {
+      greeting.innerHTML = `Welcome back, <strong>${escHtml(STATE.learnerName)}</strong>.`;
+    }
+
+    // Nav list
+    const list = document.getElementById("nav-list");
+    list.innerHTML = "";
+
+    SECTIONS.forEach((section, i) => {
+      const sectionState = STATE.sections[i];
+      const isCompleted = sectionState.completed;
+      const isActive = !isCompleted && i === activeIdx;
+      const isLocked = !isCompleted && i > activeIdx;
+
+      const li = document.createElement("li");
+      li.className = `nav-item ${isCompleted ? "completed" : isActive ? "active" : "locked"}`;
+      li.setAttribute("role", "listitem");
+
+      let statusIcon, statusLabel;
+      if (isCompleted) {
+        statusIcon = "✓";
+        statusLabel = "Completed";
+      } else if (isActive) {
+        statusIcon = "●";
+        statusLabel = "In progress";
+      } else {
+        statusIcon = "⋯";
+        statusLabel = "Locked";
+      }
+
+      const btn = document.createElement("button");
+      btn.className = "nav-item-btn";
+      btn.disabled = isLocked;
+      btn.setAttribute("aria-label", `Section ${i+1}: ${section.title} — ${statusLabel}`);
+      btn.setAttribute("aria-current", isActive ? "step" : "false");
+      btn.innerHTML = `
+        <span class="nav-status" aria-hidden="true">${statusIcon}</span>
+        <span class="nav-label">
+          <span class="nav-num">${String(i+1).padStart(2,'0')}</span>
+          <span class="nav-title">${escHtml(section.title)}</span>
+        </span>
+      `;
+
+      if (!isLocked) {
+        btn.addEventListener("click", () => on_navItemClick(i));
+      }
+
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+
+    // Progress bar
+    const count = state_completedCount();
+    const pct = (count / SECTIONS.length) * 100;
+    document.getElementById("progress-bar-fill").style.width = pct + "%";
+    document.getElementById("progress-count").textContent = `${count} / ${SECTIONS.length}`;
+    const track = document.getElementById("progress-bar-track");
+    track.setAttribute("aria-valuenow", count);
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  RENDER — SECTION CONTENT
+  // ════════════════════════════════════════════════════════════
+
+  function render_section(idx) {
+    STATE.currentSection = idx;
+    state_save();
+
+    const contentArea = document.getElementById("content-area");
+    contentArea.innerHTML = "";
+
+    const section = SECTIONS[idx];
+    const sectionState = STATE.sections[idx];
+
+    const article = document.createElement("article");
+    article.className = "section-article";
+    article.setAttribute("aria-label", `Section ${idx+1}: ${section.title}`);
+
+    // Header
+    article.innerHTML = `
+      <div class="section-eyebrow">Section ${String(idx+1).padStart(2,'0')} of ${SECTIONS.length}</div>
+      <h2>${escHtml(section.title)}</h2>
+      <div class="section-meta">${escHtml(section.meta)}</div>
+    `;
+
+    // Body (rendered by section-specific function)
+    const bodyDiv = document.createElement("div");
+    bodyDiv.className = "section-body";
+    section.render(bodyDiv);
+    article.appendChild(bodyDiv);
+
+    // Quiz zone
+    const quizZone = document.createElement("div");
+    quizZone.className = "quiz-zone";
+    quizZone.id = `quiz-zone-${idx}`;
+    render_quiz(idx, quizZone);
+    article.appendChild(quizZone);
+
+    contentArea.appendChild(article);
+    render_sidebar();
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  RENDER — QUIZ
+  // ════════════════════════════════════════════════════════════
+
+  function render_quiz(idx, container) {
+    const questions = QUIZ_DATA[idx];
+    const sectionState = STATE.sections[idx];
+    const submitted = sectionState.quizSubmitted;
+    const savedAnswers = sectionState.quizAnswers;
+
+    let html = `
+      <div class="quiz-header">
+        <div class="quiz-eyebrow">Knowledge Check</div>
+        <h3>Three questions before you continue</h3>
+      </div>
+    `;
+
+    questions.forEach((q, qi) => {
+      const selected = savedAnswers[qi];
+      html += `
+        <div class="quiz-question" id="quiz-q-${idx}-${qi}">
+          <div class="quiz-question-text">
+            <span class="quiz-question-num">${qi + 1}.</span>${escHtml(q.question)}
+          </div>
+          <div class="quiz-options" role="radiogroup" aria-label="Question ${qi + 1} options">
+      `;
+
+      q.options.forEach((opt, oi) => {
+        let cls = "quiz-option";
+        let indicatorContent = "";
+
+        if (submitted) {
+          if (oi === q.correct) {
+            // Always mark correct answer
+            cls += selected === oi ? " correct" : " correct-answer-reveal";
+            indicatorContent = "✓";
+          } else if (selected === oi && oi !== q.correct) {
+            cls += " incorrect";
+            indicatorContent = "✗";
+          }
+        } else if (selected === oi) {
+          cls += " selected";
+          indicatorContent = "●";
+        }
+
+        html += `
+          <button
+            class="${cls}"
+            data-qi="${qi}"
+            data-oi="${oi}"
+            ${submitted ? "disabled" : ""}
+            aria-pressed="${selected === oi}"
+            aria-label="Option ${oi + 1}: ${escHtml(opt)}"
+          >
+            <span class="quiz-option-indicator" aria-hidden="true">${indicatorContent}</span>
+            <span>${escHtml(opt)}</span>
+          </button>
+        `;
+      });
+
+      html += `</div>`; // .quiz-options
+
+      // Show explanation if submitted and answer was wrong
+      if (submitted && selected !== q.correct) {
+        html += `
+          <div class="quiz-explanation" role="alert">
+            <strong>Why ${selected !== null ? "not that one" : "the correct answer"}:</strong> ${escHtml(q.explanation)}
+          </div>
+        `;
+      }
+
+      html += `</div>`; // .quiz-question
+    });
+
+    // Actions row
+    if (submitted) {
+      const correct = questions.filter((q, qi) => savedAnswers[qi] === q.correct).length;
+      const wrong = questions.length - correct;
+      const isLastSection = idx === SECTIONS.length - 1;
+      const alreadyCompleted = sectionState.completed;
+      html += `
+        <div class="quiz-actions">
+          <div class="quiz-score" role="status" aria-live="polite">
+            <span class="score-correct">${correct} correct</span>
+            ${wrong > 0 ? ` · <span class="score-wrong">${wrong} to review</span>` : " · Perfect score"}
+          </div>
+          ${!alreadyCompleted ? `
+            <button class="btn-continue" id="quiz-continue-${idx}" aria-label="${isLastSection ? "Complete tutorial" : "Continue to next section"}">
+              ${isLastSection ? "Complete tutorial →" : "Continue →"}
+            </button>
+          ` : ""}
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="quiz-actions">
+          <button class="btn-quiz-submit" id="quiz-submit-${idx}" disabled aria-label="Check quiz answers">
+            Check answers
+          </button>
+          <span class="submit-hint" id="quiz-hint-${idx}" aria-live="polite">Answer all questions to check</span>
+        </div>
+      `;
+    }
+
+    container.innerHTML = html;
+
+    // Wire up option clicks (only if not yet submitted)
+    if (!submitted) {
+      container.querySelectorAll(".quiz-option").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const qi = parseInt(btn.dataset.qi);
+          const oi = parseInt(btn.dataset.oi);
+
+          // Update selection
+          STATE.sections[idx].quizAnswers[qi] = oi;
+          state_save();
+
+          // Re-render just this question's options
+          const qBlock = container.querySelector(`#quiz-q-${idx}-${qi}`);
+          const optBtns = qBlock.querySelectorAll(".quiz-option");
+          optBtns.forEach((ob, obIdx) => {
+            ob.classList.remove("selected");
+            const ind = ob.querySelector(".quiz-option-indicator");
+            if (obIdx === oi) {
+              ob.classList.add("selected");
+              ind.textContent = "●";
+              ob.setAttribute("aria-pressed", "true");
+            } else {
+              ind.textContent = "";
+              ob.setAttribute("aria-pressed", "false");
+            }
+          });
+
+          // Enable submit if all answered
+          const allAnswered = STATE.sections[idx].quizAnswers.every(a => a !== null);
+          const submitBtn = container.querySelector(`#quiz-submit-${idx}`);
+          const hintEl = container.querySelector(`#quiz-hint-${idx}`);
+          if (submitBtn) {
+            submitBtn.disabled = !allAnswered;
+            if (hintEl) hintEl.textContent = allAnswered ? "" : "Answer all questions to check";
+          }
+        });
+      });
+
+      // Wire submit button
+      const submitBtn = container.querySelector(`#quiz-submit-${idx}`);
+      if (submitBtn) {
+        submitBtn.addEventListener("click", () => on_quizSubmit(idx));
+      }
+    }
+
+    // Wire continue button (shown after submission, before section marked complete)
+    const continueBtn = container.querySelector(`#quiz-continue-${idx}`);
+    if (continueBtn) {
+      continueBtn.addEventListener("click", () => on_sectionComplete(idx));
+    }
+  }
+
+  function on_quizSubmit(idx) {
+    const answers = STATE.sections[idx].quizAnswers;
+    if (answers.some(a => a === null)) return;
+
+    const correct = QUIZ_DATA[idx].filter((q, qi) => answers[qi] === q.correct).length;
+    STATE.sections[idx].quizSubmitted = true;
+    STATE.sections[idx].quizScore = correct;
+    state_save();
+
+    // Re-render the quiz zone in place to show results + Continue button
+    const quizZone = document.getElementById(`quiz-zone-${idx}`);
+    if (quizZone) {
+      quizZone.style.opacity = "0";
+      quizZone.style.transition = "opacity 0.15s ease";
+      setTimeout(() => {
+        render_quiz(idx, quizZone);
+        quizZone.style.opacity = "";
+        quizZone.style.transition = "";
+      }, 150);
+    }
+  }
+
+  function on_sectionComplete(idx) {
+    STATE.sections[idx].completed = true;
+    state_save();
+
+    if (state_allComplete()) {
+      anim_transitionToCompletion();
+    } else {
+      const nextIdx = state_getActiveSection();
+      anim_unlockSection(nextIdx);
+      setTimeout(() => render_section(nextIdx), 600);
+    }
+  }
+
+  function render_completionView() {
+    const contentArea = document.getElementById("content-area");
+    contentArea.innerHTML = "";
+
+    const view = document.createElement("div");
+    view.className = "completion-view";
+    view.setAttribute("role", "main");
+    view.setAttribute("aria-label", "Tutorial complete");
+
+    const name = STATE.learnerName || "there";
+
+    const totalCorrect = STATE.sections.reduce((sum, s) => sum + (s.quizScore || 0), 0);
+    view.innerHTML = `
+      <div class="completion-hero">
+        <div class="completion-badge" aria-hidden="true">✦</div>
+        <h2>You've got the fundamentals, ${escHtml(name)}.</h2>
+        <p>Eleven sections complete. You answered <strong>${totalCorrect} of 33</strong> quiz questions correctly — use the nav to revisit any section and review the explanations.</p>
+      </div>
+    `;
+
+    contentArea.appendChild(view);
+    render_sidebar();
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  EVENT HANDLERS
+  // ════════════════════════════════════════════════════════════
+
+  function on_welcomeSubmit(name) {
+    STATE.learnerName = name.trim();
+    state_save();
+
+    document.getElementById("welcome-screen").classList.add("hidden");
+    document.getElementById("welcome-screen").setAttribute("aria-hidden", "true");
+    document.getElementById("app").classList.remove("hidden");
+
+    const activeIdx = state_getActiveSection();
+    if (state_allComplete()) {
+      render_completionView();
+    } else {
+      render_section(activeIdx);
+    }
+  }
+
+  function on_navItemClick(idx) {
+    const contentArea = document.getElementById("content-area");
+    contentArea.style.opacity = "0";
+    contentArea.style.transition = "opacity 0.15s ease";
+
+    setTimeout(() => {
+      contentArea.style.opacity = "";
+      contentArea.style.transition = "";
+      if (idx === SECTIONS.length && state_allComplete()) {
+        render_completionView();
+      } else {
+        render_section(idx);
+      }
+    }, 150);
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  ANIMATIONS
+  // ════════════════════════════════════════════════════════════
+
+  function anim_unlockSection(idx) {
+    render_sidebar(); // Update nav states first
+
+    // Apply unlock pulse to the newly active nav item
+    const navItems = document.querySelectorAll(".nav-item");
+    if (navItems[idx]) {
+      navItems[idx].classList.add("unlock-anim");
+      navItems[idx].addEventListener("animationend", () => {
+        navItems[idx].classList.remove("unlock-anim");
+      }, { once: true });
+    }
+  }
+
+  function anim_transitionToCompletion() {
+    render_sidebar();
+    setTimeout(() => {
+      render_completionView();
+    }, 400);
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  SECTION CONTENT RENDERERS
+  // ════════════════════════════════════════════════════════════
+
+  function renderSection1(container) {
+    container.innerHTML = `
+      <p>Claude Code is a command-line AI tool that operates directly in your development environment. It reads your files, runs your tests, edits your code, and executes terminal commands — all in response to natural language. It's not a chat interface with a text box. It's an agent with access to your shell.</p>
+
+      <p>This distinction matters. When you use Claude.ai in a browser, you're in a conversation. Claude responds, you respond, nothing persists beyond the chat window. Claude Code is different: it can read a 4,000-line file, understand its structure, make targeted changes, run the build, interpret the error, and fix it — without you touching a keyboard beyond the initial request.</p>
+
+      <div class="callout">
+        <div class="callout-label">The core distinction</div>
+        <p><strong>Claude.ai is a conversation.</strong> Claude Code is an execution environment. One answers questions. The other completes tasks — autonomously, with access to real systems.</p>
+      </div>
+
+      <h3>Why Architects Should Care</h3>
+      <p>Architects operate at the intersection of strategy and implementation. The work is often meta: reviewing code you didn't write, generating documents from system knowledge spread across six tools, translating business requirements into technical specifications. These are exactly the tasks Claude Code handles well.</p>
+
+      <p>It can ingest a GitHub repository, understand the architecture, and produce an ADR. It can run across a codebase and flag patterns that violate your standards. It can take a rough API spec and generate a full OpenAPI document, then write tests against it. The bottleneck isn't capability — it's knowing how to direct it precisely.</p>
+
+      <div class="callout">
+        <div class="callout-label">What it isn't</div>
+        <p>Claude Code is not magic. It operates within a <strong>context window</strong> — a finite working memory. It can't autonomously monitor production systems, maintain persistent state between sessions without help, or make decisions about things it hasn't been shown. Understanding these limits is as important as understanding the capabilities.</p>
+      </div>
+
+      <h3>How It Fits Into Your Stack</h3>
+      <p>Think of Claude Code as a senior developer who can be fully briefed in seconds and then executes without hand-holding. You provide the intent, constraints, and context. It provides the implementation. You review, redirect, and approve. The human stays in the loop at the decision level — not the execution level.</p>
+
+      <p>In enterprise settings, this means Claude Code is most powerful when paired with strong context: a <code>CLAUDE.md</code> file with project conventions, access to the right repositories, and prompts precise enough to leave no ambiguity about scope or output format.</p>
+    `;
+  }
+
+  function renderSection2(container) {
+    container.innerHTML = `
+      <p>The limiting factor in most AI-assisted work isn't the model's capability — it's the quality of the instruction. A well-crafted prompt is a precise articulation of intent: what you want, in what form, within what constraints. Everything else is noise.</p>
+
+      <p>The gap between a weak prompt and a strong one isn't length — it's specificity. A short, specific prompt beats a long, vague one every time.</p>
+
+      <h3>The Framework: Scope · Format · Constraints</h3>
+      <p>When crafting a prompt for architectural work, think across three dimensions:</p>
+
+      <ul>
+        <li><strong>Scope</strong> — What exactly is the target? A file, a module, a concept, a decision?</li>
+        <li><strong>Format</strong> — What should the output look like? A list, a document, runnable code, an ADR?</li>
+        <li><strong>Constraints</strong> — What guardrails apply? Length limits, style conventions, things to avoid?</li>
+      </ul>
+
+      <div class="prompt-compare">
+        <div class="prompt-card weak">
+          <div class="prompt-card-header">Weak prompt</div>
+          <div class="prompt-block">Review the codebase and tell me what's wrong with it.</div>
+        </div>
+        <div class="prompt-card strong">
+          <div class="prompt-card-header">Strong prompt</div>
+          <div class="prompt-block">Review the service layer in <code>/src/services/</code>. Identify any violations of the dependency inversion principle. Output a bulleted list with file:line references, one sentence describing the issue, and a suggested fix. Skip test files.</div>
+        </div>
+      </div>
+
+      <h3>Architecture-Specific Examples</h3>
+      <p>Prompts for architectural tasks often involve synthesizing context from multiple sources. The key is to be explicit about what Claude Code is allowed to draw on and what the output should enable downstream.</p>
+
+      <div class="prompt-single">
+        <div class="prompt-single-header">System design review</div>
+        <div class="prompt-block">Read the architecture decision records in <code>/docs/adr/</code> and the current service topology in <code>/docs/topology.md</code>. Identify three areas where the implementation has drifted from the recorded decisions. For each, note the ADR number, describe the drift, and assess the risk level as Low / Medium / High.</div>
+      </div>
+
+      <div class="prompt-single">
+        <div class="prompt-single-header">Documentation generation</div>
+        <div class="prompt-block">Generate a C4 context diagram description for the payment service based on the OpenAPI spec at <code>/api/payments.yaml</code> and the infrastructure config at <code>/terraform/payments/</code>. Use PlantUML syntax. Include all external dependencies and data flows. Omit internal implementation details.</div>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Principle</div>
+        <p>Treat prompts like function signatures: <strong>input type, output type, side effects</strong>. If you can't describe what "done" looks like, Claude Code can't know either. The clearer your definition of done, the closer the first output will be to what you need.</p>
+      </div>
+
+      <h3>Iteration Is Expected</h3>
+      <p>Strong prompting isn't about getting it perfect the first time — it's about reducing the gap between your intent and the output on each iteration. Start specific, observe what's off, adjust the constraint or format that's causing the drift. Three targeted iterations beats one paragraph of hedging instructions.</p>
+    `;
+  }
+
+  function renderSection3(container) {
+    container.innerHTML = `
+      <p>Every interaction with Claude Code happens inside a context window — a finite block of text that the model processes as a unit. Everything Claude Code "knows" about your task lives inside that window: your instructions, the files it's read, the conversation history, its own previous responses. When the window is full, earlier content drops off. Claude Code doesn't have memory outside of it.</p>
+
+      <p>For short, self-contained tasks this doesn't matter. For complex, multi-step architectural work, understanding the context window is the difference between a session that stays coherent and one that drifts.</p>
+
+      <div class="callout">
+        <div class="callout-label">Mental model</div>
+        <p>Think of the context window as a <strong>whiteboard in a meeting room</strong>. Everything relevant to the current decision needs to be on it. When the whiteboard is full, you erase things to make room — and what gets erased can no longer influence the discussion. The key skill is deciding what deserves whiteboard space.</p>
+      </div>
+
+      <h3>What Goes In</h3>
+      <p>The context window at any moment contains some mix of:</p>
+      <ul>
+        <li>System instructions (your <code>CLAUDE.md</code> file, if present)</li>
+        <li>The current conversation and all prior turns</li>
+        <li>Files Claude Code has read at your request</li>
+        <li>Tool outputs (terminal results, test output, etc.)</li>
+        <li>Claude Code's own reasoning and intermediate responses</li>
+      </ul>
+
+      <h3>Structuring Long Sessions</h3>
+      <p>For sustained architectural work, the most effective pattern is to front-load stable context into <code>CLAUDE.md</code> — project conventions, technology decisions, terminology, what's off-limits — and reserve the conversation for task-specific direction. <code>CLAUDE.md</code> is re-read at each session, which means the conventions stay fresh even as conversation history grows.</p>
+
+      <div class="prompt-compare">
+        <div class="prompt-card weak">
+          <div class="prompt-card-header">Fragile approach</div>
+          <div class="prompt-block">Remind Claude Code of your conventions at the start of every session, in the chat. Hope it remembers as the session grows longer.</div>
+        </div>
+        <div class="prompt-card strong">
+          <div class="prompt-card-header">Resilient approach</div>
+          <div class="prompt-block">Encode stable conventions in <code>CLAUDE.md</code> once. Keep chat focused on the current task. Start a fresh session when you change domains significantly.</div>
+        </div>
+      </div>
+
+      <h3>Common Failure Modes</h3>
+      <p><strong>Context drift:</strong> Early instructions lose influence as the window fills. Signs: Claude Code stops following a constraint you set in turn 1. Fix: Restate critical constraints, or start a new session with a tighter brief.</p>
+
+      <p><strong>File flooding:</strong> Reading large files eats context fast. If a 10,000-line file is in context and you only needed 200 lines of it, you've paid a steep tax. Be explicit about scope — "read only the service layer" — or ask Claude Code to extract and summarize before operating on the full file.</p>
+
+      <p><strong>Conversation sprawl:</strong> Long back-and-forth exchanges consume context that could hold content. If a session has turned into a discussion, consider summarizing the conclusions and starting fresh for the execution phase.</p>
+
+      <div class="callout">
+        <div class="callout-label">Rule of thumb</div>
+        <p>Context is a <strong>resource, not a given</strong>. Treat it the way you'd treat RAM: know what's consuming it, free up what you don't need, and don't be surprised when the system degrades when it's full.</p>
+      </div>
+    `;
+  }
+
+  function renderSection4(container) {
+    container.innerHTML = `
+      <p>Most interactions with Claude Code are conversational: you ask, it responds, you react. Agentic mode is different. You describe an objective, and Claude Code breaks it into steps, executes them in sequence, handles the results of each step, and reports back when it's done — or when it needs a decision that only you can make.</p>
+
+      <p>The shift is meaningful. In conversational mode, Claude Code is a fast, knowledgeable collaborator. In agentic mode, it's a delegated executor. Understanding the difference — and knowing when to use each — is a core architectural skill.</p>
+
+      <div class="callout">
+        <div class="callout-label">What "agentic" means in practice</div>
+        <p>Claude Code can: read multiple files in sequence, run commands and react to their output, write code and run tests against it, iterate on errors, and produce a final artifact — <strong>without step-by-step direction from you</strong>. Each tool call informs the next. The task drives the execution path.</p>
+      </div>
+
+      <h3>A Concrete Example</h3>
+      <p>Instead of "look at this file and tell me what's broken," you might say: "Audit the authentication module for security issues. For each issue found, create a GitHub issue with severity and remediation steps, then summarize the findings in <code>/docs/security-audit.md</code>." That's three steps, each dependent on the previous — and Claude Code handles the chain.</p>
+
+      <div class="prompt-single">
+        <div class="prompt-single-header">Agentic task prompt</div>
+        <div class="prompt-block">Review all files under <code>/src/api/</code> for endpoints that lack input validation. For each one found: (1) note the file and line, (2) write a failing test that demonstrates the gap, (3) implement the fix, (4) verify the test now passes. Generate a summary report at <code>/docs/validation-audit.md</code> when complete.</div>
+      </div>
+
+      <h3>When to Use Agentic Mode</h3>
+      <p>Agentic mode earns its value on tasks that are:</p>
+      <ul>
+        <li><strong>Multi-step</strong> — where the output of one step informs the next</li>
+        <li><strong>Bounded</strong> — with a clear definition of done</li>
+        <li><strong>Low-ambiguity</strong> — where intermediate decisions are mechanical, not strategic</li>
+        <li><strong>High-volume</strong> — across many files or systems where manual execution is tedious</li>
+      </ul>
+
+      <p>It's less well-suited to tasks where the strategy itself is unclear, or where every intermediate decision requires domain judgment. Don't delegate what you haven't decided.</p>
+
+      <h3>Human-in-the-Loop Patterns</h3>
+      <p>Production-grade agentic workflows include deliberate checkpoints. Claude Code supports this natively: you can instruct it to pause and wait for approval before executing destructive actions (file deletes, API calls, database writes), or to produce a plan for review before executing it.</p>
+
+      <div class="callout">
+        <div class="callout-label">Design principle</div>
+        <p>The goal isn't full autonomy — it's <strong>right-level autonomy</strong>. Automate the execution. Keep humans in the loop at strategy, irreversibility, and risk. The architecture of a human-in-the-loop system is a design decision, not an afterthought.</p>
+      </div>
+    `;
+  }
+
+  function renderSection5(container) {
+    container.innerHTML = `
+      <p>Claude Code's capabilities don't stop at files and terminal commands. Through the Model Context Protocol (MCP), it can connect to external systems — Confluence, Jira, databases, internal APIs — and use them as first-class tools during a session. MCP is the bridge between AI agents and the enterprise systems they need to reason about.</p>
+
+      <p>If REST APIs are how microservices talk to each other, MCP is how AI agents talk to tools. The analogy is precise: you define a server that exposes a set of typed, callable tools, and Claude Code invokes them the same way it would run a terminal command or read a file.</p>
+
+      <div class="callout">
+        <div class="callout-label">The core analogy</div>
+        <p>MCP is to AI agents what REST APIs are to microservices. <strong>Define the contract, expose the capability, let the agent compose.</strong> The MCP server handles authentication, rate limiting, and data transformation. Claude Code handles reasoning and orchestration.</p>
+      </div>
+
+      <h3>How It Works</h3>
+      <p>An MCP server is a lightweight process that exposes a set of tools — each with a name, description, and typed parameters. Claude Code discovers these tools at the start of a session and can invoke them during task execution. The server handles the actual integration; Claude Code handles the judgment about when and how to call it.</p>
+
+      <div class="diagram-block">┌─────────────────┐       MCP        ┌──────────────────────┐
+│   Claude Code   │ ◄──────────────► │     MCP Server       │
+│   (MCP client)  │   (stdio/HTTP)   │  (Confluence, Jira,  │
+└─────────────────┘                  │   internal APIs…)    │
+                                     └──────────────────────┘
+         │                                      │
+         │ Invokes tools with typed args        │ Handles auth,
+         │ Interprets structured responses      │ rate limits,
+         │ Composes across multiple calls       │ data mapping</div>
+
+      <h3>Common Enterprise MCP Use Cases</h3>
+      <ul>
+        <li><strong>Confluence MCP:</strong> Claude Code searches for architectural decisions, retrieves page content, and drafts new pages — all without leaving the terminal</li>
+        <li><strong>Jira MCP:</strong> Reads sprint state, creates tickets from audit findings, updates acceptance criteria based on implementation</li>
+        <li><strong>Internal API registry:</strong> Claude Code queries your service catalog to understand dependencies before suggesting changes</li>
+        <li><strong>Observability tools:</strong> Retrieves recent error traces to inform debugging or post-incident reviews</li>
+      </ul>
+
+      <div class="prompt-single">
+        <div class="prompt-single-header">With MCP: end-to-end agentic task</div>
+        <div class="prompt-block">Review the payment service for compliance with our API standards (in Confluence: "API Design Guidelines v3"). For each violation, create a Jira ticket in PROJECT-123 with the component, description, and a code snippet showing the fix. Add a summary comment to the existing architecture review ticket PAY-88.</div>
+      </div>
+
+      <h3>Thinking About MCP as an Architect</h3>
+      <p>When evaluating AI system designs, MCP changes the question from "what can the model do?" to "what tools do we give it?" This is a familiar pattern: you've been designing APIs for humans for years. Designing MCP tools for agents follows the same principles — clear contracts, minimal surface area, explicit error states.</p>
+
+      <div class="callout">
+        <div class="callout-label">Evaluation lens</div>
+        <p>When you see an AI system proposal, ask: <strong>what MCP tools does it need?</strong> If the answer is "everything," that's an architecture smell. Well-scoped AI agents have well-scoped tool surfaces. The tool list is the capability boundary.</p>
+      </div>
+
+      <p>MCP is still maturing, but the pattern is settling. Anthropic publishes the spec; the ecosystem is building servers for common enterprise systems. Investing in understanding MCP now positions you to evaluate, design, and govern AI integrations as they scale across the organization.</p>
+    `;
+  }
+
+  function renderSection6(container) {
+    container.innerHTML = `
+      <p>Claude Code has more than one mode of operation. Understanding when to engage each one is the difference between an AI tool that surprises you — sometimes pleasantly, sometimes not — and one you can rely on for high-stakes work.</p>
+
+      <h3>Plan Mode</h3>
+      <p>Activate Plan Mode with <code>/plan</code> or by pressing <code>Shift+Tab</code> before sending a message. In this mode, Claude reasons through the problem and produces a structured checklist of intended steps. It presents the plan and waits. Nothing executes until you approve.</p>
+
+      <div class="callout">
+        <div class="callout-label">What a plan looks like</div>
+        <p>A plan is a numbered list of concrete actions: read this file, edit these lines, run this test, create this document. It's reviewable, editable, and rejectable. You can say "skip step 3" or "do step 2 differently" before a single character is changed.</p>
+      </div>
+
+      <p>Plan mode is most valuable when:</p>
+      <ul>
+        <li>The task touches many files across an unfamiliar codebase</li>
+        <li>You're about to do something irreversible — deleting, restructuring, or migrating</li>
+        <li>You want to pressure-test your own mental model of the approach before committing</li>
+        <li>The task is complex enough that the strategy matters as much as the execution</li>
+      </ul>
+
+      <h3>Default Mode & Permission Prompts</h3>
+      <p>In default mode, Claude Code executes immediately, cycling through tool calls as it works. For read-only operations — reading files, running searches — it proceeds without interruption. For operations that affect the filesystem, shell state, or external systems, it surfaces a permission prompt and waits for approval before proceeding.</p>
+
+      <p>This isn't a bug or excessive caution — it's the human-in-the-loop mechanism. The goal is autonomy for safe operations and human gates at risk boundaries. You can tune how restrictive this is in settings, but understand the tradeoff before loosening it.</p>
+
+      <div class="prompt-compare">
+        <div class="prompt-card weak">
+          <div class="prompt-card-header">When to skip Plan Mode</div>
+          <div class="prompt-block">Quick, well-scoped fixes in files you own. "Fix the off-by-one error in this function." You know the target, you know what done looks like — the overhead of a plan adds nothing.</div>
+        </div>
+        <div class="prompt-card strong">
+          <div class="prompt-card-header">When Plan Mode earns its cost</div>
+          <div class="prompt-block">Refactoring the authentication layer across 40 files. Migrating a service to a new API contract. Generating a compliance report from 12 different sources. When scope is broad and reversibility is low.</div>
+        </div>
+      </div>
+
+      <h3>The Strategic Value for Architects</h3>
+      <p>Plan mode gives you something valuable beyond safety: it externalizes Claude Code's reasoning. Reading the plan tells you whether Claude understood the problem the way you intended. A plan that looks wrong is a signal to clarify before work begins — not after. This is the "spec review before implementation" discipline, applied to AI-assisted execution.</p>
+
+      <div class="callout">
+        <div class="callout-label">Principle</div>
+        <p>The plan is <strong>a commit on intent</strong>. It forces Claude Code to articulate what it's about to do and forces you to confirm that's what you wanted. Most misalignment between intent and output gets caught at plan review, not at diff review.</p>
+      </div>
+    `;
+  }
+
+  function renderSection7(container) {
+    container.innerHTML = `
+      <p>Claude Code operates through a defined set of tools — discrete, typed capabilities that it can invoke during a session. Understanding what each tool does, when to use it, and how the permission model works is essential for directing Claude Code precisely and keeping sessions efficient.</p>
+
+      <h3>The Core Tool Set</h3>
+
+      <p><strong>File Tools</strong></p>
+      <ul>
+        <li><strong>Read</strong> — Read file contents. Supports code, PDFs, images, Jupyter notebooks. Specify line ranges for large files to avoid flooding the context.</li>
+        <li><strong>Write</strong> — Create a new file or fully overwrite an existing one. Use sparingly on existing files.</li>
+        <li><strong>Edit</strong> — Make targeted string replacements within a file. Preferred over Write for modifications — sends only the diff, keeps context lean, and makes changes easily reviewable.</li>
+        <li><strong>Glob</strong> — Find files by path pattern (e.g., <code>**/*.service.ts</code>). Fast, no shell required. Use when you're matching by file name or location.</li>
+      </ul>
+
+      <p><strong>Search & Fetch</strong></p>
+      <ul>
+        <li><strong>Grep</strong> — Search file contents using regex, powered by ripgrep. Use when you're matching by content, not filename.</li>
+        <li><strong>WebSearch</strong> — Search the web. Useful for looking up library docs, CVEs, API specs.</li>
+        <li><strong>WebFetch</strong> — Fetch and read the contents of a specific URL.</li>
+      </ul>
+
+      <p><strong>Execution</strong></p>
+      <ul>
+        <li><strong>Bash</strong> — Execute shell commands. Run tests, install packages, call CLIs, invoke git. The most powerful and most sensitive tool — treat with appropriate care.</li>
+      </ul>
+
+      <p><strong>Delegation</strong></p>
+      <ul>
+        <li><strong>Agent</strong> — Spawn a subagent to handle a delegated task. Covered in depth in the next section.</li>
+      </ul>
+
+      <div class="callout">
+        <div class="callout-label">Edit vs. Write</div>
+        <p>Default to <strong>Edit</strong> for modifications. It requires Claude Code to read before writing, produces a reviewable diff, and consumes less context. Write is appropriate when creating a new file from scratch or doing a complete rewrite where a diff would be noise.</p>
+      </div>
+
+      <h3>The Tool Use Loop</h3>
+      <p>Claude Code doesn't call tools blindly. Each tool call is: (1) decided by the model based on context, (2) surfaced to you with parameters visible, (3) approved or denied, (4) executed, and (5) the result folded back into context for the next step. The loop repeats until the task is complete or Claude Code needs further direction.</p>
+
+      <p>This means you can intercept at every tool call. If Claude Code is about to read a file you know is irrelevant, deny it and redirect. If a Bash command looks wrong, deny and explain. The loop is interruptible by design.</p>
+
+      <div class="prompt-compare">
+        <div class="prompt-card weak">
+          <div class="prompt-card-header">Vague tool direction</div>
+          <div class="prompt-block">Read the codebase and find all the authentication issues.</div>
+        </div>
+        <div class="prompt-card strong">
+          <div class="prompt-card-header">Scoped tool direction</div>
+          <div class="prompt-block">Read only the files under <code>/src/auth/</code>. Use Grep to find calls to deprecated methods listed in <code>/docs/deprecations.md</code>. Do not run any shell commands.</div>
+        </div>
+      </div>
+
+      <h3>Permission Configuration</h3>
+      <p>Tools are categorized as auto-allowed (run without a prompt) or requiring approval. You configure this in <code>~/.claude/settings.json</code> or per-project in <code>.claude/settings.json</code>. On an isolated development machine you might auto-allow everything. In a shared or production-adjacent environment, restrict Bash and Write. The permission model is where policy lives — don't leave it on defaults without thinking.</p>
+    `;
+  }
+
+  function renderSection8(container) {
+    container.innerHTML = `
+      <p>Claude Code can do more than execute tasks sequentially in a single session. Through the Agent tool, it can spawn sub-instances — subagents — that work on delegated tasks in parallel, in isolation, and with their own context windows. For complex, large-scale work, this architecture is where Claude Code becomes genuinely powerful.</p>
+
+      <h3>What Subagents Are</h3>
+      <p>When Claude Code invokes the Agent tool, it launches a new Claude instance with a specific task, its own clean context, and (optionally) its own isolated copy of the repository. The subagent works autonomously, returns a result to the parent, and terminates. The parent incorporates the result and continues.</p>
+
+      <div class="callout">
+        <div class="callout-label">The key properties</div>
+        <p>Subagents have <strong>isolated context</strong> (they don't see the parent's history), <strong>bounded scope</strong> (they do one thing and return), and optionally <strong>isolated filesystem</strong> (via git worktrees). Each of these is a feature, not a limitation.</p>
+      </div>
+
+      <h3>Why Isolation Matters</h3>
+      <p><strong>Context isolation</strong> — A subagent starts fresh. If you ask a subagent to analyze a large service, its findings come back as a clean summary, not 50,000 tokens of file contents appended to your main session. Your context stays sharp.</p>
+
+      <p><strong>Worktree isolation</strong> — When a subagent runs in a git worktree, it works on a separate copy of the repository. It can read, write, commit, and run tests without touching your working tree. If the work is good, merge it. If not, the worktree is discarded automatically.</p>
+
+      <h3>Parallelism</h3>
+      <p>Multiple subagents can run simultaneously. Instead of analyzing 10 microservices one after another in a single session, you spawn 10 agents in parallel — each focused on one service — and aggregate results. What would take 10 sequential context cycles takes one round-trip.</p>
+
+      <div class="prompt-single">
+        <div class="prompt-single-header">Parallel subagent dispatch</div>
+        <div class="prompt-block">For each of the following services — auth, payments, notifications, inventory, reporting — spawn a separate subagent. Each should: read the service's README and OpenAPI spec, identify any endpoints lacking input validation, and return a summary. Aggregate results into /docs/validation-gaps.md.</div>
+      </div>
+
+      <h3>Specialized Agent Types</h3>
+      <p>Claude Code ships with purpose-built agent types:</p>
+      <ul>
+        <li><strong>Explore</strong> — Fast codebase navigation. Use when you need to find files, search content, or answer structural questions without the overhead of a general-purpose agent.</li>
+        <li><strong>Plan</strong> — Software architect agent. Returns implementation plans, identifies critical files, considers trade-offs.</li>
+        <li><strong>general-purpose</strong> — Full capabilities including web search and execution. The default for complex tasks.</li>
+        <li><strong>feature-dev variants</strong> — Specialized for exploring, designing, and reviewing code changes.</li>
+      </ul>
+
+      <div class="callout">
+        <div class="callout-label">When to reach for subagents</div>
+        <p>Use subagents when tasks are <strong>naturally decomposable</strong> into independent units, when a task would generate <strong>large, low-signal results</strong> you don't want in main context, or when you need <strong>isolation</strong> — an outside eye, a clean slate, or a disposable workspace.</p>
+      </div>
+    `;
+  }
+
+  function renderSection9(container) {
+    container.innerHTML = `
+      <p>Not every task warrants the same model. Choosing the right Claude model for a given task is a legitimate architectural decision — one that affects output quality, session cost, and response latency. Getting this right matters more as usage scales.</p>
+
+      <h3>The Model Landscape</h3>
+      <ul>
+        <li><strong>Claude Opus 4</strong> (<code>claude-opus-4-6</code>) — Highest capability. Best for complex, multi-layered reasoning where quality is worth the cost and latency tradeoff.</li>
+        <li><strong>Claude Sonnet 4.6</strong> (<code>claude-sonnet-4-6</code>) — The daily driver. Best balance of capability, speed, and cost for the vast majority of engineering tasks.</li>
+        <li><strong>Claude Haiku 4.5</strong> (<code>claude-haiku-4-5</code>) — Fastest and cheapest. Optimized for high-frequency, lower-complexity tasks where throughput matters.</li>
+      </ul>
+
+      <p>In Claude Code, select a model with the <code>--model</code> flag or configure it in <code>~/.claude/settings.json</code>. Subagent definitions can also specify a model independently of the parent session — a powerful pattern for cost optimization.</p>
+
+      <h3>Decision Framework</h3>
+
+      <div class="callout">
+        <div class="callout-label">Use Opus when</div>
+        <p>The task requires holding many constraints simultaneously, nuanced judgment under ambiguity, creative synthesis across complex domains, or when the cost of a mediocre answer is high. Novel architecture trade-offs. Complex security analysis. Multi-system refactoring strategies.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Use Sonnet when</div>
+        <p>You're doing standard development work: code review, documentation generation, refactoring well-understood code, writing tests, responding to PR comments. This covers roughly 80% of Claude Code use cases. If you're unsure, start here.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Use Haiku when</div>
+        <p>Volume and cost matter: CI/CD pipelines, high-frequency simple lookups, formatting checks, generating boilerplate from templates, tasks where the operation is mechanical and the output is easy to verify.</p>
+      </div>
+
+      <h3>The Real Decision Axes</h3>
+      <p>The practical variables aren't complexity alone — they're a triad:</p>
+      <ul>
+        <li><strong>Capability ceiling</strong> — How hard is the reasoning? Novel synthesis needs Opus. Pattern matching needs Haiku.</li>
+        <li><strong>Volume and cost</strong> — Running on 500 files per day in a pipeline is a different budget constraint than a one-off architectural analysis.</li>
+        <li><strong>Latency tolerance</strong> — Interactive exploration where you're waiting for answers calls for a faster model. Overnight batch jobs don't.</li>
+      </ul>
+
+      <div class="prompt-compare">
+        <div class="prompt-card weak">
+          <div class="prompt-card-header">Default to Opus for everything</div>
+          <div class="prompt-block">Always use the most capable model. Simple requests cost extra tokens, complex requests get no more than they need — but at least you never leave quality on the table.</div>
+        </div>
+        <div class="prompt-card strong">
+          <div class="prompt-card-header">Match model to task</div>
+          <div class="prompt-block">Sonnet for daily code review and docs. Haiku in CI for style checks. Opus for the quarterly architecture review and novel problem-solving. Right-size the model the same way you right-size infrastructure.</div>
+        </div>
+      </div>
+
+      <p>A useful heuristic: if you could hand the task to a junior engineer with a good checklist and they'd get it right, Haiku or Sonnet is sufficient. If the task requires judgment that a senior architect would deliberate over, that's an Opus conversation.</p>
+    `;
+  }
+
+  function renderSection10(container) {
+    container.innerHTML = `
+      <p>Claude Code's extensibility goes well beyond what ships in the box. Through IDE integrations, a hooks system, and custom slash commands — layered on top of the MCP infrastructure covered earlier — you can shape Claude Code to fit your team's workflows, enforce organizational guardrails, and meet developers where they work.</p>
+
+      <h3>IDE Integrations</h3>
+      <p>Claude Code integrates natively into VS Code and JetBrains IDEs. The terminal is available and functional, but editor integration removes friction in ways that matter for adoption:</p>
+      <ul>
+        <li>Proposed file changes appear as <strong>inline diffs</strong> — accept per-line, per-hunk, or per-file</li>
+        <li>Claude Code commands are available from the <strong>command palette</strong> without leaving the editor</li>
+        <li>A dedicated sidebar shows session context, active tasks, and recent tool calls</li>
+        <li>Integrated terminal means you see both Claude Code output and your own commands in one view</li>
+      </ul>
+
+      <p>For enterprise adoption, the IDE integration is often the difference between a tool that gets used and one that doesn't. Meeting developers in their primary environment — not asking them to context-switch to a terminal — is a real barrier to overcome.</p>
+
+      <h3>The Hooks System</h3>
+      <p>Hooks are shell scripts that execute in response to Claude Code lifecycle events. They're defined in <code>~/.claude/settings.json</code> and run before or after specific tool calls. Key hooks:</p>
+      <ul>
+        <li><strong>PreToolUse</strong> — Runs before a tool call. Can inspect the parameters and block execution.</li>
+        <li><strong>PostToolUse</strong> — Runs after a tool call. Useful for logging, formatting, or triggering downstream actions.</li>
+        <li><strong>Stop</strong> — Runs when a session ends.</li>
+      </ul>
+
+      <div class="callout">
+        <div class="callout-label">Hooks are the governance layer</div>
+        <p>Hooks enforce policies that prompts can't. A prompt saying "never delete files" can be overridden by a subsequent instruction. A PreToolUse hook that blocks any Bash command containing <code>rm -rf</code> cannot. <strong>If a guardrail is important, make it a hook, not a prompt instruction.</strong></p>
+      </div>
+
+      <h3>Custom Slash Commands</h3>
+      <p>Any Markdown file placed in <code>.claude/commands/</code> becomes a <code>/command</code> available in any Claude Code session within that project. Files in <code>~/.claude/commands/</code> are available globally. The filename becomes the command name; the Markdown content becomes the prompt.</p>
+
+      <div class="prompt-single">
+        <div class="prompt-single-header">.claude/commands/architecture-review.md</div>
+        <div class="prompt-block">Review the current implementation against the ADRs in /docs/adr/. For each ADR: note whether the implementation aligns, identify any drift, and assess severity as Low / Medium / High. Output a structured report at /docs/architecture-review-$DATE.md.</div>
+      </div>
+
+      <p>Custom commands are how teams standardize workflows. Instead of everyone reconstructing "the right way to run a security audit" from memory, one <code>/security-audit</code> command captures the standard. Version-controlled in the repo, visible to everyone, improvable over time.</p>
+
+      <h3>Putting It Together</h3>
+      <p>The architecture of a mature Claude Code deployment for an enterprise team typically looks like: MCP servers for system access, hooks for governance, custom slash commands for standardized workflows, and IDE integrations for developer experience. Each layer is independently useful; together they form a governed, extensible AI capability platform — not just a tool you run occasionally in a terminal.</p>
+    `;
+  }
+
+  function renderSection11(container) {
+    container.innerHTML = `
+      <p>You've covered the full arc — from what Claude Code is and how to prompt it, through context windows, agentic workflows, MCP, plan mode, tools, subagents, model selection, and the extensibility layer. That's a lot of ground. The goal was never to make you an expert in a sitting; it was to give you a working mental model and enough vocabulary to learn efficiently from here.</p>
+
+      <p>What comes next is practice, documentation, and the growing community building on top of these foundations.</p>
+
+      <h3>Official Documentation</h3>
+      <p>The Anthropic docs are the authoritative reference — updated with every release, covering configuration options and features that move faster than any tutorial can track.</p>
+
+      <div class="resource-grid">
+        <a class="resource-card" href="https://docs.anthropic.com/en/docs/claude-code/overview" target="_blank" rel="noopener">
+          <div class="resource-card-icon">⌘</div>
+          <div class="resource-card-body">
+            <div class="resource-card-title">Claude Code Overview</div>
+            <div class="resource-card-desc">The full feature reference — settings, permissions, slash commands, CLI flags, and everything that's shipped since this tutorial was written.</div>
+            <div class="resource-card-url">docs.anthropic.com</div>
+          </div>
+        </a>
+        <a class="resource-card" href="https://docs.anthropic.com/en/docs/claude-code/quickstart" target="_blank" rel="noopener">
+          <div class="resource-card-icon">▶</div>
+          <div class="resource-card-body">
+            <div class="resource-card-title">Quickstart Guide</div>
+            <div class="resource-card-desc">Installation, authentication, and your first session. If you haven't run Claude Code yet, start here.</div>
+            <div class="resource-card-url">docs.anthropic.com</div>
+          </div>
+        </a>
+        <a class="resource-card" href="https://docs.anthropic.com/en/docs/claude-code/hooks" target="_blank" rel="noopener">
+          <div class="resource-card-icon">⚙</div>
+          <div class="resource-card-body">
+            <div class="resource-card-title">Hooks Reference</div>
+            <div class="resource-card-desc">Complete hook events, configuration schema, and examples for building governance and automation layers.</div>
+            <div class="resource-card-url">docs.anthropic.com</div>
+          </div>
+        </a>
+        <a class="resource-card" href="https://docs.anthropic.com/en/docs/claude-code/settings" target="_blank" rel="noopener">
+          <div class="resource-card-icon">◈</div>
+          <div class="resource-card-body">
+            <div class="resource-card-title">Settings Reference</div>
+            <div class="resource-card-desc">Every configuration option — global and per-project. Permissions, model defaults, tool allowlists, environment variables.</div>
+            <div class="resource-card-url">docs.anthropic.com</div>
+          </div>
+        </a>
+      </div>
+
+      <h3>Going Deeper</h3>
+
+      <div class="resource-grid">
+        <a class="resource-card" href="https://modelcontextprotocol.io" target="_blank" rel="noopener">
+          <div class="resource-card-icon">⬡</div>
+          <div class="resource-card-body">
+            <div class="resource-card-title">Model Context Protocol Spec</div>
+            <div class="resource-card-desc">The full MCP specification — protocol design, tool schemas, transport options, server SDKs, and the community-built server ecosystem.</div>
+            <div class="resource-card-url">modelcontextprotocol.io</div>
+          </div>
+        </a>
+        <a class="resource-card" href="https://docs.anthropic.com/en/api/getting-started" target="_blank" rel="noopener">
+          <div class="resource-card-icon">{ }</div>
+          <div class="resource-card-body">
+            <div class="resource-card-title">Anthropic API Reference</div>
+            <div class="resource-card-desc">For when you move from using Claude Code to building on top of it — the API, SDKs, tool use, and agent SDK documentation.</div>
+            <div class="resource-card-url">docs.anthropic.com</div>
+          </div>
+        </a>
+        <a class="resource-card" href="https://docs.anthropic.com/en/docs/about-claude/models/overview" target="_blank" rel="noopener">
+          <div class="resource-card-icon">◉</div>
+          <div class="resource-card-body">
+            <div class="resource-card-title">Model Overview</div>
+            <div class="resource-card-desc">Current model IDs, context window sizes, and capability comparisons — updated with each new release.</div>
+            <div class="resource-card-url">docs.anthropic.com</div>
+          </div>
+        </a>
+        <a class="resource-card" href="https://www.anthropic.com/research" target="_blank" rel="noopener">
+          <div class="resource-card-icon">◆</div>
+          <div class="resource-card-body">
+            <div class="resource-card-title">Anthropic Research</div>
+            <div class="resource-card-desc">The primary research behind the models you're using — interpretability, alignment, and capability work that shapes where this technology is headed.</div>
+            <div class="resource-card-url">anthropic.com</div>
+          </div>
+        </a>
+      </div>
+
+      <h3>From Here</h3>
+      <p>The fastest path to competency is a real task. Not a practice exercise — something from your actual backlog that you'd have spent an hour doing manually. Run it with Claude Code. Notice where it surprises you, where it drifts, where it needs more context than you gave it. Each of those moments maps directly back to a section in this tutorial.</p>
+
+      <div class="callout">
+        <div class="callout-label">One thing to do today</div>
+        <p>Open a terminal in a codebase you own. Ask Claude Code to explain the architecture of one module you haven't looked at closely. Read the output. Ask a follow-up. That's the workflow — and it compounds from there.</p>
+      </div>
+    `;
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  UTILITIES
+  // ════════════════════════════════════════════════════════════
+
+  function escHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  INIT
+  // ════════════════════════════════════════════════════════════
+
+  function init() {
+    // Check localStorage availability
+    try {
+      localStorage.setItem("_cc_test", "1");
+      localStorage.removeItem("_cc_test");
+    } catch(e) {
+      storageAvailable = false;
+      document.getElementById("storage-banner").classList.add("visible");
+    }
+
+    state_load();
+
+    // Welcome form
+    const nameInput = document.getElementById("learner-name");
+    const beginBtn = document.getElementById("begin-btn");
+    const welcomeForm = document.getElementById("welcome-form");
+
+    nameInput.addEventListener("input", () => {
+      beginBtn.disabled = nameInput.value.trim().length === 0;
+    });
+
+    welcomeForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = nameInput.value.trim();
+      if (name) on_welcomeSubmit(name);
+    });
+
+    // Reset button
+    document.getElementById("reset-btn").addEventListener("click", () => {
+      if (confirm("Reset all progress and start over? This can't be undone.")) {
+        state_reset();
+        location.reload();
+      }
+    });
+
+    // Returning user: skip welcome screen
+    if (STATE.learnerName) {
+      document.getElementById("welcome-screen").classList.add("hidden");
+      document.getElementById("welcome-screen").setAttribute("aria-hidden", "true");
+      document.getElementById("app").classList.remove("hidden");
+
+      if (state_allComplete()) {
+        render_completionView();
+      } else {
+        const activeIdx = state_getActiveSection();
+        render_section(activeIdx);
+      }
+    } else {
+      // First visit — focus name input
+      setTimeout(() => nameInput.focus(), 100);
+    }
+  }
+
+  // Run on DOM ready
+  document.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>
